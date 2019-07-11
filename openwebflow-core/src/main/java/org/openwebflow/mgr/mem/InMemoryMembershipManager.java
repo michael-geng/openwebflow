@@ -1,126 +1,100 @@
 package org.openwebflow.mgr.mem;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.activiti.engine.identity.Group;
 import org.activiti.engine.impl.persistence.entity.GroupEntity;
 import org.openwebflow.identity.IdentityMembershipManager;
 import org.openwebflow.mgr.ext.IdentityMembershipManagerEx;
 
+import java.util.*;
+
 /**
  * 本类演示自定义用户管理
- * 
+ *
  * @author bluejoe2008@gmail.com
- * 
  */
-public class InMemoryMembershipManager implements IdentityMembershipManager, IdentityMembershipManagerEx
-{
-	class Membership
-	{
-		String _groupId;
+public class InMemoryMembershipManager implements IdentityMembershipManager, IdentityMembershipManagerEx {
+    private Map<String, Group> _groups = new HashMap<String, Group>();
+    private List<Membership> _memberships = new ArrayList<Membership>();
 
-		String _userId;
+    public Group createGroup(String groupId, String groupName) {
+        Group group = _groups.get(groupId);
+        if (group == null) {
+            group = new GroupEntity(groupId);
+            _groups.put(groupId, group);
+        }
 
-		public Membership(String userId, String group)
-		{
-			super();
-			_userId = userId;
-			_groupId = group;
-		}
-	}
+        if (groupName != null) {
+            group.setName(groupName);
+        }
 
-	private Map<String, Group> _groups = new HashMap<String, Group>();
+        return group;
+    }
 
-	private List<Membership> _memberships = new ArrayList<Membership>();
+    @Override
+    public List<String> findGroupIdsByUser(String userId) {
+        Map<String, Object> groupIds = new HashMap<String, Object>();
+        for (Membership ms : _memberships) {
+            if (userId.equals(ms._userId)) {
+                groupIds.put(ms._groupId, new Object());
+            }
+        }
 
-	public Group createGroup(String groupId, String groupName)
-	{
-		Group group = _groups.get(groupId);
-		if (group == null)
-		{
-			group = new GroupEntity(groupId);
-			_groups.put(groupId, group);
-		}
+        return new ArrayList<String>(groupIds.keySet());
+    }
 
-		if (groupName != null)
-		{
-			group.setName(groupName);
-		}
+    @Override
+    public List<String> findUserIdsByGroup(String groupId) {
+        Map<String, Object> userIds = new HashMap<String, Object>();
+        for (Membership ms : _memberships) {
+            if (groupId.equals(ms._groupId)) {
+                userIds.put(ms._userId, new Object());
+            }
+        }
 
-		return group;
-	}
+        return new ArrayList<String>(userIds.keySet());
+    }
 
-	@Override
-	public List<String> findGroupIdsByUser(String userId)
-	{
-		Map<String, Object> groupIds = new HashMap<String, Object>();
-		for (Membership ms : _memberships)
-		{
-			if (userId.equals(ms._userId))
-			{
-				groupIds.put(ms._groupId, new Object());
-			}
-		}
+    protected Group getGroupById(String groupId) {
+        return createGroup(groupId, null);
+    }
 
-		return new ArrayList<String>(groupIds.keySet());
-	}
+    public Collection<Group> getGroups() {
+        return _groups.values();
+    }
 
-	@Override
-	public List<String> findUserIdsByGroup(String groupId)
-	{
-		Map<String, Object> userIds = new HashMap<String, Object>();
-		for (Membership ms : _memberships)
-		{
-			if (groupId.equals(ms._groupId))
-			{
-				userIds.put(ms._userId, new Object());
-			}
-		}
+    @Override
+    public void removeAll() {
+        _groups.clear();
+        _memberships.clear();
+    }
 
-		return new ArrayList<String>(userIds.keySet());
-	}
+    public void saveMembership(String userId, String groupId) {
+        _memberships.add(new Membership(userId, groupId));
+    }
 
-	protected Group getGroupById(String groupId)
-	{
-		return createGroup(groupId, null);
-	}
+    public void setGroupsText(String text) {
+        for (String pair : text.split(";")) {
+            String[] gp = pair.split(":");
+            createGroup(gp[0], gp[1]);
+        }
+    }
 
-	public Collection<Group> getGroups()
-	{
-		return _groups.values();
-	}
+    public void setPermissionsText(String text) {
+        for (String pair : text.split(";")) {
+            String[] gp = pair.split(":");
+            saveMembership(gp[0], gp[1]);
+        }
+    }
 
-	@Override
-	public void removeAll()
-	{
-		_groups.clear();
-		_memberships.clear();
-	}
+    class Membership {
+        String _groupId;
 
-	public void saveMembership(String userId, String groupId)
-	{
-		_memberships.add(new Membership(userId, groupId));
-	}
+        String _userId;
 
-	public void setGroupsText(String text)
-	{
-		for (String pair : text.split(";"))
-		{
-			String[] gp = pair.split(":");
-			createGroup(gp[0], gp[1]);
-		}
-	}
-
-	public void setPermissionsText(String text)
-	{
-		for (String pair : text.split(";"))
-		{
-			String[] gp = pair.split(":");
-			saveMembership(gp[0], gp[1]);
-		}
-	}
+        public Membership(String userId, String group) {
+            super();
+            _userId = userId;
+            _groupId = group;
+        }
+    }
 }

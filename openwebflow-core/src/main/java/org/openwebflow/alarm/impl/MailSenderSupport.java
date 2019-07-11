@@ -1,65 +1,54 @@
 package org.openwebflow.alarm.impl;
 
-public class MailSenderSupport
-{
-	protected String _authPassword;
+public class MailSenderSupport {
+    protected String _authPassword;
 
-	protected String _authUserName;
+    protected String _authUserName;
 
-	protected String _mailFrom;
+    protected String _mailFrom;
 
-	protected String _serverHost;
+    protected String _serverHost;
 
-	protected int _serverPort;
+    protected int _serverPort;
 
-	public String getAuthPassword()
-	{
-		return _authPassword;
-	}
+    public String getAuthPassword() {
+        return _authPassword;
+    }
 
-	public String getAuthUserName()
-	{
-		return _authUserName;
-	}
+    public void setAuthPassword(String authPassword) {
+        _authPassword = authPassword;
+    }
 
-	public String getMailFrom()
-	{
-		return _mailFrom;
-	}
+    public String getAuthUserName() {
+        return _authUserName;
+    }
 
-	public String getServerHost()
-	{
-		return _serverHost;
-	}
+    public void setAuthUserName(String authUserName) {
+        _authUserName = authUserName;
+    }
 
-	public int getServerPort()
-	{
-		return _serverPort;
-	}
+    public String getMailFrom() {
+        return _mailFrom;
+    }
 
-	public void setAuthPassword(String authPassword)
-	{
-		_authPassword = authPassword;
-	}
+    public void setMailFrom(String mailFrom) {
+        _mailFrom = mailFrom;
+    }
 
-	public void setAuthUserName(String authUserName)
-	{
-		_authUserName = authUserName;
-	}
+    public String getServerHost() {
+        return _serverHost;
+    }
 
-	public void setMailFrom(String mailFrom)
-	{
-		_mailFrom = mailFrom;
-	}
+    public void setServerHost(String serverHost) {
+        _serverHost = serverHost;
+    }
 
-	public void setServerHost(String serverHost)
-	{
-		_serverHost = serverHost;
-	}
+    public int getServerPort() {
+        return _serverPort;
+    }
 
-	public void setServerPort(int serverPort)
-	{
-		_serverPort = serverPort;
-	}
+    public void setServerPort(int serverPort) {
+        _serverPort = serverPort;
+    }
 
 }

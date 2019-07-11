@@ -1,10 +1,5 @@
 package org.openwebflow.assign.delegation;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.activiti.engine.delegate.Expression;
 import org.activiti.engine.impl.persistence.entity.TaskEntity;
 import org.activiti.engine.impl.pvm.delegate.ActivityExecution;
@@ -13,171 +8,146 @@ import org.openwebflow.assign.TaskAssignmentHandler;
 import org.openwebflow.assign.TaskAssignmentHandlerChain;
 import org.openwebflow.identity.IdentityMembershipManager;
 
-public class TaskDelagationAssignmentHandler implements TaskAssignmentHandler
-{
-	DelegationManager _delegationManager;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-	boolean _hideDelegated = false;
+public class TaskDelagationAssignmentHandler implements TaskAssignmentHandler {
+    DelegationManager _delegationManager;
 
-	IdentityMembershipManager _membershipManager;
+    boolean _hideDelegated = false;
 
-	private void addCandidateUsers(TaskEntity task, Set<String> delegates)
-	{
-		for (String delegate : delegates)
-		{
-			task.addCandidateUser(delegate);
-		}
-	}
+    IdentityMembershipManager _membershipManager;
 
-	public DelegationManager getDelegationManager()
-	{
-		return _delegationManager;
-	}
+    private void addCandidateUsers(TaskEntity task, Set<String> delegates) {
+        for (String delegate : delegates) {
+            task.addCandidateUser(delegate);
+        }
+    }
 
-	public IdentityMembershipManager getMembershipManager()
-	{
-		return _membershipManager;
-	}
+    public DelegationManager getDelegationManager() {
+        return _delegationManager;
+    }
 
-	@Override
-	public void handleAssignment(TaskAssignmentHandlerChain chain, Expression assigneeExpression,
-			Expression ownerExpression, Set<Expression> candidateUserExpressions,
-			Set<Expression> candidateGroupExpressions, TaskEntity task, ActivityExecution execution)
-	{
-		//先执行其它规则
-		chain.resume(assigneeExpression, ownerExpression, candidateUserExpressions,
-			      candidateGroupExpressions, task, execution);
+    public void setDelegationManager(DelegationManager delegationManager) {
+        _delegationManager = delegationManager;
+    }
 
-		overwriteAssignee(task);
+    public IdentityMembershipManager getMembershipManager() {
+        return _membershipManager;
+    }
 
-		Map<String, Object> userIdMap = new HashMap<String, Object>();
-		Map<String, Object> groupIdMap = new HashMap<String, Object>();
-		retrieveCandidateUserIdsAndGroupIds(task, userIdMap, groupIdMap);
-		Map<String, Object> newUserIdMap = new HashMap<String, Object>();
-		Map<String, Object> removeUserIdMap = new HashMap<String, Object>();
+    public void setMembershipManager(IdentityMembershipManager membershipManager) {
+        _membershipManager = membershipManager;
+    }
 
-		//遍历所有的被代理人
-		List<DelegationEntity> entries = _delegationManager.listDelegationEntities();
-		overwriteCandicateUserIds(userIdMap, newUserIdMap, removeUserIdMap, entries);
-		overwriteCandicateGroupIds(groupIdMap, newUserIdMap, entries);
+    @Override
+    public void handleAssignment(TaskAssignmentHandlerChain chain, Expression assigneeExpression,
+                                 Expression ownerExpression, Set<Expression> candidateUserExpressions,
+                                 Set<Expression> candidateGroupExpressions, TaskEntity task, ActivityExecution execution) {
+        //先执行其它规则
+        chain.resume(assigneeExpression, ownerExpression, candidateUserExpressions,
+                candidateGroupExpressions, task, execution);
 
-		addCandidateUsers(task, newUserIdMap.keySet());
-		removeCandidateUsers(task, removeUserIdMap.keySet());
-	}
+        overwriteAssignee(task);
 
-	private boolean isCandicateGroupMember(String delegated, Map<String, Object> groupIds)
-	{
-		for (String groupId : _membershipManager.findGroupIdsByUser(delegated))
-		{
-			if (groupIds.containsKey(groupId))
-				return true;
-		}
+        Map<String, Object> userIdMap = new HashMap<String, Object>();
+        Map<String, Object> groupIdMap = new HashMap<String, Object>();
+        retrieveCandidateUserIdsAndGroupIds(task, userIdMap, groupIdMap);
+        Map<String, Object> newUserIdMap = new HashMap<String, Object>();
+        Map<String, Object> removeUserIdMap = new HashMap<String, Object>();
 
-		return false;
-	}
+        //遍历所有的被代理人
+        List<DelegationEntity> entries = _delegationManager.listDelegationEntities();
+        overwriteCandicateUserIds(userIdMap, newUserIdMap, removeUserIdMap, entries);
+        overwriteCandicateGroupIds(groupIdMap, newUserIdMap, entries);
 
-	public boolean isHideDelegated()
-	{
-		return _hideDelegated;
-	}
+        addCandidateUsers(task, newUserIdMap.keySet());
+        removeCandidateUsers(task, removeUserIdMap.keySet());
+    }
 
-	protected void overwriteAssignee(TaskEntity task)
-	{
-		String assignee = task.getAssignee();
+    private boolean isCandicateGroupMember(String delegated, Map<String, Object> groupIds) {
+        for (String groupId : _membershipManager.findGroupIdsByUser(delegated)) {
+            if (groupIds.containsKey(groupId))
+                return true;
+        }
 
-		//受理人是否被代理
-		if (assignee != null)
-		{
-			String[] delegates = _delegationManager.getDelegates(assignee);
-			if (delegates != null && delegates.length > 0)
-			{
-				task.setAssignee(delegates[0]);
-			}
-		}
-	}
+        return false;
+    }
 
-	protected void overwriteCandicateGroupIds(Map<String, Object> groupIdMap, Map<String, Object> newUserIdMap,
-			List<DelegationEntity> entries)
-	{
-		for (DelegationEntity en : entries)
-		{
-			//代理人已经在map里了
-			if (newUserIdMap.containsKey(en.getDelegate()))
-			{
-				continue;
-			}
+    public boolean isHideDelegated() {
+        return _hideDelegated;
+    }
 
-			//该被代理人是否属于候选组
-			if (isCandicateGroupMember(en.getDelegated(), groupIdMap))
-			{
-				newUserIdMap.put(en.getDelegate(), 0);
-			}
-		}
-	}
+    public void setHideDelegated(boolean hideDelegated) {
+        _hideDelegated = hideDelegated;
+    }
 
-	protected void overwriteCandicateUserIds(Map<String, Object> userIdMap, Map<String, Object> newUserIdMap,
-			Map<String, Object> removeUserIdMap, List<DelegationEntity> entries)
-	{
-		for (DelegationEntity en : entries)
-		{
-			//代理人已经在map里了
-			if (newUserIdMap.containsKey(en.getDelegate()))
-			{
-				continue;
-			}
+    protected void overwriteAssignee(TaskEntity task) {
+        String assignee = task.getAssignee();
 
-			//被代理人作为候选用户
-			if (userIdMap.containsKey(en.getDelegated()))
-			{
-				newUserIdMap.put(en.getDelegate(), 0);
-				if (this.isHideDelegated())
-				{
-					removeUserIdMap.put(en.getDelegated(), 0);
-				}
-			}
-		}
-	}
+        //受理人是否被代理
+        if (assignee != null) {
+            String[] delegates = _delegationManager.getDelegates(assignee);
+            if (delegates != null && delegates.length > 0) {
+                task.setAssignee(delegates[0]);
+            }
+        }
+    }
 
-	private void removeCandidateUsers(TaskEntity task, Set<String> delegates)
-	{
-		for (String delegate : delegates)
-		{
-			task.deleteCandidateUser(delegate);
-		}
-	}
+    protected void overwriteCandicateGroupIds(Map<String, Object> groupIdMap, Map<String, Object> newUserIdMap,
+                                              List<DelegationEntity> entries) {
+        for (DelegationEntity en : entries) {
+            //代理人已经在map里了
+            if (newUserIdMap.containsKey(en.getDelegate())) {
+                continue;
+            }
 
-	private void retrieveCandidateUserIdsAndGroupIds(TaskEntity task, Map<String, Object> userIdMap,
-			Map<String, Object> groupIdMap)
-	{
-		for (IdentityLink link : task.getCandidates())
-		{
-			String userId = link.getUserId();
-			if (userId != null)
-			{
-				userIdMap.put(userId, 0);
-			}
+            //该被代理人是否属于候选组
+            if (isCandicateGroupMember(en.getDelegated(), groupIdMap)) {
+                newUserIdMap.put(en.getDelegate(), 0);
+            }
+        }
+    }
 
-			String groupId = link.getGroupId();
-			if (groupId != null)
-			{
-				groupIdMap.put(groupId, 0);
-			}
-		}
-	}
+    protected void overwriteCandicateUserIds(Map<String, Object> userIdMap, Map<String, Object> newUserIdMap,
+                                             Map<String, Object> removeUserIdMap, List<DelegationEntity> entries) {
+        for (DelegationEntity en : entries) {
+            //代理人已经在map里了
+            if (newUserIdMap.containsKey(en.getDelegate())) {
+                continue;
+            }
 
-	public void setDelegationManager(DelegationManager delegationManager)
-	{
-		_delegationManager = delegationManager;
-	}
+            //被代理人作为候选用户
+            if (userIdMap.containsKey(en.getDelegated())) {
+                newUserIdMap.put(en.getDelegate(), 0);
+                if (this.isHideDelegated()) {
+                    removeUserIdMap.put(en.getDelegated(), 0);
+                }
+            }
+        }
+    }
 
-	public void setHideDelegated(boolean hideDelegated)
-	{
-		_hideDelegated = hideDelegated;
-	}
+    private void removeCandidateUsers(TaskEntity task, Set<String> delegates) {
+        for (String delegate : delegates) {
+            task.deleteCandidateUser(delegate);
+        }
+    }
 
-	public void setMembershipManager(IdentityMembershipManager membershipManager)
-	{
-		_membershipManager = membershipManager;
-	}
+    private void retrieveCandidateUserIdsAndGroupIds(TaskEntity task, Map<String, Object> userIdMap,
+                                                     Map<String, Object> groupIdMap) {
+        for (IdentityLink link : task.getCandidates()) {
+            String userId = link.getUserId();
+            if (userId != null) {
+                userIdMap.put(userId, 0);
+            }
+
+            String groupId = link.getGroupId();
+            if (groupId != null) {
+                groupIdMap.put(groupId, 0);
+            }
+        }
+    }
 
 }

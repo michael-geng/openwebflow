@@ -1,10 +1,5 @@
 package org.openwebflow.alarm.impl;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
 import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.task.Task;
 import org.apache.log4j.Logger;
@@ -19,143 +14,116 @@ import org.openwebflow.identity.UserDetailsManager;
 import org.openwebflow.util.IdentityUtils;
 import org.springframework.beans.factory.DisposableBean;
 
-public class TaskAlarmServiceImpl implements TaskAlarmService, DisposableBean
-{
-	class MonitorTask extends TimerTask
-	{
-		Period _parsedPeriodInAdvance;
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-		public MonitorTask()
-		{
-			_parsedPeriodInAdvance = Period.parse(_periodInAdvance);
-		}
+public class TaskAlarmServiceImpl implements TaskAlarmService, DisposableBean {
+    long _checkInterval = 10000;
+    IdentityMembershipManager _membershipManager;
+    MessageNotifier _messageNotifier;
+    TaskNotificationManager _taskNotificationManager;
+    String _periodInAdvance;
+    ProcessEngine _processEngine;
+    UserDetailsManager _userDetailsManager;
+    private Timer _monitorTimer = new Timer(true);
 
-		private void checkAndNotify() throws Exception
-		{
-			//检查即将过期的task
-			Date dueDate = DateTime.now().minus(_parsedPeriodInAdvance).toDate();
+    public TaskNotificationManager getTaskNotificationManager() {
+        return _taskNotificationManager;
+    }
 
-			for (Task task : _processEngine.getTaskService().createTaskQuery().active().dueAfter(dueDate).list())
-			{
-				//是否已经通知？
-				if (!_taskNotificationManager.isNotified(task.getId()))
-				{
-					//没有通知则现在通知
-					List<UserDetailsEntity> involvedUsers = IdentityUtils.getUserDetailsFromIds(
-						IdentityUtils.getInvolvedUsers(_processEngine.getTaskService(), task, _membershipManager),
-						_userDetailsManager);
+    public void setTaskNotificationManager(TaskNotificationManager taskNotificationManager) {
+        _taskNotificationManager = taskNotificationManager;
+    }
 
-					if (!involvedUsers.isEmpty())
-					{
-						_messageNotifier.notify(involvedUsers.toArray(new UserDetailsEntity[0]), task);
-					}
-					//设置标志
-					_taskNotificationManager.setNotified(task.getId());
-					Logger.getLogger(getClass()).debug(String.format("notified %s", involvedUsers));
-				}
-			}
-		}
+    @Override
+    public void destroy() throws Exception {
+        _monitorTimer.cancel();
+    }
 
-		@Override
-		public void run()
-		{
-			try
-			{
-				checkAndNotify();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
+    public long getCheckInterval() {
+        return _checkInterval;
+    }
 
-	long _checkInterval = 10000;
+    public void setCheckInterval(long checkInterval) {
+        _checkInterval = checkInterval;
+    }
 
-	IdentityMembershipManager _membershipManager;
+    public IdentityMembershipManager getMembershipManager() {
+        return _membershipManager;
+    }
 
-	MessageNotifier _messageNotifier;
+    public void setMembershipManager(IdentityMembershipManager membershipManager) {
+        _membershipManager = membershipManager;
+    }
 
-	private Timer _monitorTimer = new Timer(true);
+    public MessageNotifier getMessageNotifier() {
+        return _messageNotifier;
+    }
 
-	TaskNotificationManager _taskNotificationManager;
+    public void setMessageNotifier(MessageNotifier messageNotifier) {
+        _messageNotifier = messageNotifier;
+    }
 
-	public TaskNotificationManager getTaskNotificationManager()
-	{
-		return _taskNotificationManager;
-	}
+    public String getPeriodInAdvance() {
+        return _periodInAdvance;
+    }
 
-	public void setTaskNotificationManager(TaskNotificationManager taskNotificationManager)
-	{
-		_taskNotificationManager = taskNotificationManager;
-	}
+    public void setPeriodInAdvance(String periodInAdvance) {
+        _periodInAdvance = periodInAdvance;
+    }
 
-	String _periodInAdvance;
+    public UserDetailsManager getUserDetailsManager() {
+        return _userDetailsManager;
+    }
 
-	ProcessEngine _processEngine;
+    public void setUserDetailsManager(UserDetailsManager userDetailsManager) {
+        _userDetailsManager = userDetailsManager;
+    }
 
-	UserDetailsManager _userDetailsManager;
+    @Override
+    public void start(ProcessEngine processEngine) throws Exception {
+        _processEngine = processEngine;
+        _monitorTimer.schedule(new MonitorTask(), _checkInterval, _checkInterval);
+    }
 
-	@Override
-	public void destroy() throws Exception
-	{
-		_monitorTimer.cancel();
-	}
+    class MonitorTask extends TimerTask {
+        Period _parsedPeriodInAdvance;
 
-	public long getCheckInterval()
-	{
-		return _checkInterval;
-	}
+        public MonitorTask() {
+            _parsedPeriodInAdvance = Period.parse(_periodInAdvance);
+        }
 
-	public IdentityMembershipManager getMembershipManager()
-	{
-		return _membershipManager;
-	}
+        private void checkAndNotify() throws Exception {
+            //检查即将过期的task
+            Date dueDate = DateTime.now().minus(_parsedPeriodInAdvance).toDate();
 
-	public MessageNotifier getMessageNotifier()
-	{
-		return _messageNotifier;
-	}
+            for (Task task : _processEngine.getTaskService().createTaskQuery().active().dueAfter(dueDate).list()) {
+                //是否已经通知？
+                if (!_taskNotificationManager.isNotified(task.getId())) {
+                    //没有通知则现在通知
+                    List<UserDetailsEntity> involvedUsers = IdentityUtils.getUserDetailsFromIds(
+                            IdentityUtils.getInvolvedUsers(_processEngine.getTaskService(), task, _membershipManager),
+                            _userDetailsManager);
 
-	public String getPeriodInAdvance()
-	{
-		return _periodInAdvance;
-	}
+                    if (!involvedUsers.isEmpty()) {
+                        _messageNotifier.notify(involvedUsers.toArray(new UserDetailsEntity[0]), task);
+                    }
+                    //设置标志
+                    _taskNotificationManager.setNotified(task.getId());
+                    Logger.getLogger(getClass()).debug(String.format("notified %s", involvedUsers));
+                }
+            }
+        }
 
-	public UserDetailsManager getUserDetailsManager()
-	{
-		return _userDetailsManager;
-	}
-
-	public void setCheckInterval(long checkInterval)
-	{
-		_checkInterval = checkInterval;
-	}
-
-	public void setMembershipManager(IdentityMembershipManager membershipManager)
-	{
-		_membershipManager = membershipManager;
-	}
-
-	public void setMessageNotifier(MessageNotifier messageNotifier)
-	{
-		_messageNotifier = messageNotifier;
-	}
-
-	public void setPeriodInAdvance(String periodInAdvance)
-	{
-		_periodInAdvance = periodInAdvance;
-	}
-
-	public void setUserDetailsManager(UserDetailsManager userDetailsManager)
-	{
-		_userDetailsManager = userDetailsManager;
-	}
-
-	@Override
-	public void start(ProcessEngine processEngine) throws Exception
-	{
-		_processEngine = processEngine;
-		_monitorTimer.schedule(new MonitorTask(), _checkInterval, _checkInterval);
-	}
+        @Override
+        public void run() {
+            try {
+                checkAndNotify();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

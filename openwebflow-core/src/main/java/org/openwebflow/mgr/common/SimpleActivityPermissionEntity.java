@@ -1,98 +1,82 @@
 package org.openwebflow.mgr.common;
 
-import java.sql.Date;
-
 import org.openwebflow.assign.permission.ActivityPermissionEntity;
+
+import java.sql.Date;
 
 /**
  * 20141015于高空
- * 
+ *
  * @author bluejoe2008@gmail.com
- * 
  */
-public class SimpleActivityPermissionEntity implements ActivityPermissionEntity
-{
-	private String _activityKey;
+public class SimpleActivityPermissionEntity implements ActivityPermissionEntity {
+    private String _activityKey;
 
-	private String _assignee;
+    private String _assignee;
 
-	private String[] _grantedGroupIds;
+    private String[] _grantedGroupIds;
 
-	private String[] _grantedUserIds;
+    private String[] _grantedUserIds;
 
-	private long _id;
+    private long _id;
 
-	private Date _opTime;
+    private Date _opTime;
 
-	private String _processDefinitionId;
+    private String _processDefinitionId;
 
-	public String getActivityKey()
-	{
-		return _activityKey;
-	}
+    public String getActivityKey() {
+        return _activityKey;
+    }
 
-	public String getAssignee()
-	{
-		return _assignee;
-	}
+    public void setActivityKey(String activityKey) {
+        _activityKey = activityKey;
+    }
 
-	public String[] getGrantedGroupIds()
-	{
-		return _grantedGroupIds;
-	}
+    public String getAssignee() {
+        return _assignee;
+    }
 
-	public String[] getGrantedUserIds()
-	{
-		return _grantedUserIds;
-	}
+    public void setAssignee(String assignee) {
+        _assignee = assignee;
+    }
 
-	public long getId()
-	{
-		return _id;
-	}
+    public String[] getGrantedGroupIds() {
+        return _grantedGroupIds;
+    }
 
-	public Date getOpTime()
-	{
-		return _opTime;
-	}
+    public void setGrantedGroupIds(String[] grantedGroupIds) {
+        _grantedGroupIds = grantedGroupIds;
+    }
 
-	public String getProcessDefinitionId()
-	{
-		return _processDefinitionId;
-	}
+    public String[] getGrantedUserIds() {
+        return _grantedUserIds;
+    }
 
-	public void setActivityKey(String activityKey)
-	{
-		_activityKey = activityKey;
-	}
+    public void setGrantedUserIds(String[] grantedUserIds) {
+        _grantedUserIds = grantedUserIds;
+    }
 
-	public void setAssignee(String assignee)
-	{
-		_assignee = assignee;
-	}
+    public long getId() {
+        return _id;
+    }
 
-	public void setGrantedGroupIds(String[] grantedGroupIds)
-	{
-		_grantedGroupIds = grantedGroupIds;
-	}
+    public void setId(long id) {
+        _id = id;
+    }
 
-	public void setGrantedUserIds(String[] grantedUserIds)
-	{
-		_grantedUserIds = grantedUserIds;
-	}
+    public Date getOpTime() {
+        return _opTime;
+    }
 
-	public void setId(long id)
-	{
-		_id = id;
-	}
+    public void setOpTime(Date time) {
+        _opTime = time;
+    }
 
-	public void setOpTime(Date time)
-	{
-		_opTime = time;
-	}
+    public String getProcessDefinitionId() {
+        return _processDefinitionId;
+    }
 
-	public void setProcessDefinitionId(String processDefinitionId)
-	{
-		_processDefinitionId = processDefinitionId;
-	}
+    public void setProcessDefinitionId(String processDefinitionId) {
+        _processDefinitionId = processDefinitionId;
+    }
 }
